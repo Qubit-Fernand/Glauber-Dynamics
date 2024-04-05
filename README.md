@@ -1,1 +1,1 @@
-MCMC implementation of global dynamics for matching in contrast with Guassain Boson Sampling
+MCMC implementation of Glauber Dynamics for graph matching in contrast with Guassian Boson Sampling

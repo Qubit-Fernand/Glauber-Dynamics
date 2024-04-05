@@ -1,51 +1,58 @@
 import numpy as np
 import random
 
-def compute_edge_difference(matching, adj_matrix_1, adj_matrix_2):
+def compute_cost(matching, graph1, graph2):
     """
-    Compute the difference in the number of edges between matched nodes.
+    Computes the cost of the current matching.
+    This function should be defined based on the specific problem.
+    For simplicity, we're just summing the differences in edge weights.
     """
-    diff = 0
-    for i, j in enumerate(matching):
-        for k, l in enumerate(matching):
-            if i < k:  # To avoid double counting
-                diff += abs(adj_matrix_1[i, k] - adj_matrix_2[j, l])
-    return diff
+    cost = 0
+    for i in range(len(matching)):
+        for j in range(len(matching)):
+            # Sum the absolute difference in edge weights
+            cost += abs(graph1[i, j] - graph2[matching[i], matching[j]])
+    return cost
 
-def propose_new_matching(matching):
-    """
-    Propose a new matching by swapping two nodes.
-    """
-    idx = range(len(matching))
-    i, j = random.sample(idx, 2)
-    new_matching = matching.copy()
-    new_matching[i], new_matching[j] = new_matching[j], new_matching[i]
-    return new_matching
-
-def mcmc_graph_matching(adj_matrix_1, adj_matrix_2, iterations=1000):
-    """
-    Perform MCMC for graph matching.
-    """
-    # Initialize with a random matching
-    node_count = adj_matrix_1.shape[0]
-    current_matching = list(range(node_count))
-    random.shuffle(current_matching)
-
-    current_diff = compute_edge_difference(current_matching, adj_matrix_1, adj_matrix_2)
-
+def glauber_dynamics(graph1, graph2, iterations=1000):
+    n = graph1.shape[0]
+    # Initial random matching
+    matching = list(range(n))
+    random.shuffle(matching)
+    
     for _ in range(iterations):
-        new_matching = propose_new_matching(current_matching)
-        new_diff = compute_edge_difference(new_matching, adj_matrix_1, adj_matrix_2)
+        # Randomly select two nodes in the first graph to consider swapping
+        i, j = random.sample(range(n), 2)
         
-        if new_diff < current_diff or np.random.rand() < np.exp(-(new_diff - current_diff)):
-            current_matching = new_matching
-            current_diff = new_diff
+        # Compute the cost of the current matching
+        current_cost = compute_cost(matching, graph1, graph2)
+        
+        # Try swapping matches
+        matching[i], matching[j] = matching[j], matching[i]
+        
+        # Compute the cost after swapping
+        new_cost = compute_cost(matching, graph1, graph2)
+        
+        # Decide whether to accept the new matching
+        if new_cost > current_cost:
+            # Swap back if the new matching is worse, with a certain probability
+            # This probability could be adjusted based on temperature or other criteria
+            if random.random() > 0.5:
+                matching[i], matching[j] = matching[j], matching[i]
+                
+    return matching
 
-    return current_matching
+# Example graphs represented as adjacency matrices
+graph1 = np.array([[0, 1, 1, 0],
+                   [1, 0, 1, 0],
+                   [1, 1, 0, 1],
+                   [0, 0, 1, 0]])
 
-# Example usage with dummy adjacency matrices
-adj_matrix_1 = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
-adj_matrix_2 = np.array([[0, 1, 1], [1, 0, 0], [1, 0, 0]])
+graph2 = np.array([[0, 1, 0, 1],
+                   [1, 0, 1, 1],
+                   [0, 1, 0, 1],
+                   [1, 1, 1, 0]])
 
-matching = mcmc_graph_matching(adj_matrix_1, adj_matrix_2)
+# Run the algorithm
+matching = glauber_dynamics(graph1, graph2)
 print("Matching:", matching)
